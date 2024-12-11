@@ -14,16 +14,18 @@
     formatStringPair: .asciz "((%ld, %ld), (%ld, %ld))\n"
     formatStringFile: .asciz "%ld: ((%ld, %ld), (%ld, %ld))\n"
     newLine: .asciz "\n"
-    
-    /*n: .long 2000
-    matrix: .space 4000000*/
 
     n: .long 1024
-    matrix: .space 4000000
+    matrix_size: .long 1048576
+    matrix: .space 4194304
+
+    /*n: .long 200
+    matrix_size: .long 40000
+    matrix: .space 160000*/
 
 .text
 
-/* helpers */
+/*helpers*/
 /*returns no of blocks for the size given as parameter*/
 SIZE_TO_BLOCKS:
     pushl %ebp
@@ -643,8 +645,55 @@ DEL_PROC:
     add $16, %esp
 
     del_proc_ret:
-        call PRINT_MEMORY_INTERVALS
+        popl %ebp
+        ret
 
+/*removes the element at a given index; (index,top)*/
+REMOVE_ELEMENT_ARRAY:
+    pushl %ebp
+    movl %esp, %ebp
+
+    movl 8(%ebp), %ecx
+    movl 12(%ebp), %edx
+    dec %edx
+
+    loop_remove_element_array:
+        cmp %ecx, %edx
+        je ret_remove_element_array
+
+        inc %ecx
+        movl (%edi, %ecx, 4), %eax
+        dec %ecx
+        movl %eax, (%edi, %ecx, 4)
+
+        inc %ecx
+        jmp loop_remove_element_array
+
+    ret_remove_element_array:
+        movl $0, (%edi, %ecx, 4)
+        popl %ebp
+        ret
+
+/*returns the last non-zero element position*/
+LAST_NON_ZERO_ELEMENT:
+    pushl %ebp
+    movl %esp, %ebp
+
+    movl matrix_size, %ecx
+
+    last_non_zero_loop:
+        cmp $0, %ecx
+        je ret_last_non_zero
+
+        movl (%edi, %ecx, 4), %eax
+        cmp $0, %eax
+        jne ret_last_non_zero
+
+        dec %ecx
+        jmp last_non_zero_loop
+
+    ret_last_non_zero:
+        movl %ecx, %eax
         popl %ebp
         ret
 
@@ -652,14 +701,160 @@ STANDARD_DEFRAG:
     pushl %ebp
     movl %esp, %ebp
 
-    standard_defrag_ret:
+    call LAST_NON_ZERO_ELEMENT
+    addl $2, %eax
+    movl %eax, %edx
+    xor %ecx, %ecx
+
+    loop_standard_defrag:
+        cmp %edx, %ecx
+        jge ret_standard_defrag
+
+        movl (%edi, %ecx, 4), %eax
+        cmp $0, %eax
+        je free_space_std_defrag  
+
+        inc %ecx
+        jmp loop_standard_defrag
+
+    free_space_std_defrag:
+        pushl %edx
+        pushl %ecx
+        call REMOVE_ELEMENT_ARRAY
+        popl %ecx
+        popl %edx
+
+        dec %edx
+
+        jmp loop_standard_defrag
+
+    ret_standard_defrag:
         popl %ebp
         ret
 
+/*insert_at_pos(position)*/
+INSERT_AT_POS:
+    pushl %ebp
+    movl %esp, %ebp
+
+    movl matrix_size, %ecx
+    movl 8(%ebp), %edx
+    insert_at_pos_loop:
+        cmp %edx, %ecx
+        je insert_at_pos_ret
+
+        dec %ecx
+        movl (%edi, %ecx, 4), %eax
+        inc %ecx
+        movl %eax, (%edi, %ecx, 4)
+
+        dec %ecx
+        jmp insert_at_pos_loop
+
+    insert_at_pos_ret:
+        movl 8(%ebp), %eax
+        movl $0, (%edi, %eax, 4)
+        popl %ebp
+        ret
+
+/*insert at pos(position, k)*/
+INSERT_AT_POS_KTIMES:
+    pushl %ebp
+    movl %esp, %ebp
+
+    movl 12(%ebp), %ecx
+
+    insert_at_pos_ktimes_loop:
+        cmp $0, %ecx
+        je ret_insert_at_pos_ktimes
+
+        pushl %ecx
+        pushl 8(%ebp)
+        call INSERT_AT_POS
+        add $4, %esp
+        popl %ecx
+
+        dec %ecx
+        jmp insert_at_pos_ktimes_loop
+
+    ret_insert_at_pos_ktimes:
+        popl %ebp
+        ret
+
+ALIGN_FILES_DEFRAG:
+    pushl %ebp
+    movl %esp, %ebp
+
+    subl $4, %esp
+
+    movl n, %ecx
+    movl matrix_size, %edx
+    subl n, %edx
+
+    align_files_defrag_loop:
+        cmp %edx, %ecx
+        je ret_align_files_defrag
+        
+        movl (%edi, %ecx, 4), %eax
+        dec %ecx
+        movl (%edi, %ecx, 4), %ebx
+        inc %ecx
+
+        cmp %eax, %ebx
+        je equal_values
+
+        addl n, %ecx
+        jmp align_files_defrag_loop
+
+    equal_values:
+        cmp $0, %eax
+        je continue_align_files
+
+        movl %eax, -4(%ebp)
+        movl %ecx, %ebx
+        dec %ebx
+
+        equal_values_loop:
+            movl (%edi, %ebx, 4), %eax
+            cmp -4(%ebp), %eax
+            jne equal_values_seq_end
+
+            dec %ebx
+            jmp equal_values_loop
+
+        equal_values_seq_end:
+            movl %ecx, %eax
+            subl %ebx, %eax
+            dec %eax
+            inc %ebx
+
+            pusha
+            pushl %eax
+            pushl %ebx
+            call INSERT_AT_POS_KTIMES
+            addl $8, %esp
+            popa
+            
+        addl n, %ecx
+        jmp align_files_defrag_loop
+
+        
+    continue_align_files:
+        addl n, %ecx
+        jmp align_files_defrag_loop
+
+    ret_align_files_defrag:
+        addl $4, %esp
+        popl %ebp
+        ret
 
 DEFRAG_PROC:
     pushl %ebp
     movl %esp, %ebp
+
+    call STANDARD_DEFRAG
+    call ALIGN_FILES_DEFRAG
+    call PRINT_MEMORY_INTERVALS
 
     defrag_proc_ret:
         popl %ebp
@@ -729,10 +924,7 @@ main:
         inc %ecx
         jmp loop_operations
 
-
 exit:
-    /*call print_matrix*/
-
     movl $1, %eax
     xor %ebx, %ebx
     int $0x80

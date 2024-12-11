@@ -83,6 +83,10 @@ PRINT_MEMORY:
         jmp loop_print_memory
 
     ret_print_memory:
+        pushl $0
+        call fflush
+        add $4, %esp
+
         popl %ebp   
         ret
 
@@ -138,10 +142,6 @@ PRINT_MEMORY_INTERVALS:
         jmp loop_print_memory_intervals
         
     ret_print_memory_intervals:
-        /*pushl $newLine
-        call printf
-        add $4, %esp*/
-
         popl %ebp
         ret
 
@@ -358,10 +358,6 @@ GET_PROC:
     call printIntv
     add $8, %esp
 
-    /*pushl $newLine
-    call printf
-    add $4, %esp*/
-
     popl %ebp
     ret
 
@@ -515,6 +511,7 @@ main:
         jmp loop_operations
 
 exit:
+    /*call PRINT_MEMORY*/
     mov $1, %eax
     xor %ebx,%ebx
     int $0x80
