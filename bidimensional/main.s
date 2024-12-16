@@ -860,6 +860,17 @@ DEFRAG_PROC:
         popl %ebp
         ret
 
+CONCRETE_PROC:
+    pushl %ebp
+    movl %esp, %ebp
+
+    
+
+    concrete_proc_ret:
+        popl %ebp
+        ret
+
+
 .global main
 main:
     lea matrix, %edi
@@ -893,6 +904,9 @@ main:
         cmp $4, op
         je case_defrag_proc
 
+        cmp $5, op
+        je case_concrete_proc
+
         inc %ecx
         jmp loop_operations
 
@@ -920,6 +934,13 @@ main:
     case_defrag_proc:
         pushl %ecx
         call DEFRAG_PROC
+        popl %ecx
+        inc %ecx
+        jmp loop_operations
+
+    case_concrete_proc:
+        pushl %ecx
+        call CONCRETE_PROC
         popl %ecx
         inc %ecx
         jmp loop_operations
