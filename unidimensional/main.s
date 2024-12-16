@@ -316,6 +316,10 @@ ADD_PROC:
         add $8, %esp
         popl %ecx
 
+        movl size, %eax
+        cmp $8, %eax
+        jbe continue_adding_files
+
         pushl %ecx
         pushl size
         call SIZE_TO_BLOCKS
@@ -331,6 +335,7 @@ ADD_PROC:
         add $8, %esp
         popl %ecx
 
+    continue_adding_files:
         inc %ecx
         jmp add_proc_loop
 
@@ -374,15 +379,19 @@ DEL_PROC:
     call GET_FILE
     add $4, %esp
 
+    cmp %eax, %ebx
+    je del_proc_ret
+
     pushl $0
     pushl %ebx
     pushl %eax
     call FILL_MEM_SEQ
     add $12, %esp
 
-    call PRINT_MEMORY_INTERVALS
-    popl %ebp
-    ret
+    del_proc_ret:
+        call PRINT_MEMORY_INTERVALS
+        popl %ebp
+        ret
 
 /*removes the element at a given index; (index,top)*/
 REMOVE_ELEMENT_ARRAY:
@@ -511,7 +520,10 @@ main:
         jmp loop_operations
 
 exit:
-    /*call PRINT_MEMORY*/
+    pushl $0
+    call fflush
+    add $4, %esp
+
     mov $1, %eax
     xor %ebx,%ebx
     int $0x80

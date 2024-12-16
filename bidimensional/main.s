@@ -864,8 +864,6 @@ CONCRETE_PROC:
     pushl %ebp
     movl %esp, %ebp
 
-    
-
     concrete_proc_ret:
         popl %ebp
         ret
