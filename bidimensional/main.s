@@ -285,10 +285,6 @@ PRINT_MEMORY_INTERVALS:
         jmp loop_print_memory_intervals
 
     print_memory_intervals_ret:
-        pushl $newLine
-        call printf
-        add $4, %esp
-
         popl %ebp
         ret
 
@@ -474,6 +470,13 @@ ADD_PROC:
         add $8, %esp
         popl %ecx
 
+        movl size, %eax
+        cmp $8, %eax
+        jbe continue_adding_files
+        
+        cmp $8193, %eax
+        jge can_not_add_file
+
         pushl %ecx
         pushl size
         call SIZE_TO_BLOCKS
@@ -489,12 +492,48 @@ ADD_PROC:
         add $8, %esp
         popl %ecx
 
+        pusha
+
+        pushl desc
+        call GET_FILE
+        add $4, %esp
+
+        pushl %ebx
+        pushl %ecx
+        pushl %eax
+        pushl %ecx
+        pushl desc
+        pushl $formatStringFile
+        call printf
+        add $8, %esp
+        popl %ecx
+        popl %eax
+        popl %ecx
+        popl %ebx
+        
+        popa
+
+    continue_adding_files:
+        inc %ecx
+        jmp add_proc_loop
+
+    can_not_add_file:
+        pusha
+        pushl $0
+        pushl $0
+        pushl $0
+        pushl $0
+        pushl desc
+        pushl $formatStringFile
+        call printf
+        add $24, %esp
+        popa
+
         inc %ecx
         jmp add_proc_loop
 
     add_proc_ret:
-        call PRINT_MEMORY_INTERVALS
-
+        /*call PRINT_MEMORY_INTERVALS*/
         popl %ebp
         ret
 
@@ -602,6 +641,9 @@ GET_PROC:
     call GET_FILE
     add $4, %esp
 
+    cmp %eax, %ebx
+    je file_not_found_in_matrix
+
     pushl %ebx
     pushl %ecx
     pushl %eax
@@ -613,6 +655,22 @@ GET_PROC:
     popl %eax
     popl %ecx
     popl %ebx
+
+    jmp get_proc_ret
+
+    file_not_found_in_matrix:
+        xor %ecx, %ecx
+        pushl %ebx
+        pushl %ecx
+        pushl %eax
+        pushl %ecx
+        pushl $formatStringPair
+        call printf
+        add $4, %esp
+        popl %ecx
+        popl %eax
+        popl %ecx
+        popl %ebx
 
     get_proc_ret:
         popl %ebp
@@ -645,6 +703,7 @@ DEL_PROC:
     add $16, %esp
 
     del_proc_ret:
+        call PRINT_MEMORY_INTERVALS
         popl %ebp
         ret
 
@@ -944,6 +1003,10 @@ main:
         jmp loop_operations
 
 exit:
+    pushl $0
+    call fflush
+    add $4, %esp
+
     movl $1, %eax
     xor %ebx, %ebx
     int $0x80

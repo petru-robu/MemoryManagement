@@ -335,13 +335,30 @@ ADD_PROC:
         add $8, %esp
         popl %ecx
 
+        pushl %ecx
+        pushl desc
+        call GET_FILE
+        add $4, %esp
+        popl %ecx
+
+        pushl %ecx
+        pushl %ebx
+        pushl %eax
+        pushl desc
+        pushl $formatStringFile
+        call printf
+        add $8, %esp
+        popl %eax
+        popl %ebx
+        popl %ecx
+
     continue_adding_files:
         inc %ecx
         jmp add_proc_loop
 
 
     return_proc_loop:
-        call PRINT_MEMORY_INTERVALS
+        /*call PRINT_MEMORY_INTERVALS*/
         popl %ebp
         ret
 
