@@ -10,7 +10,7 @@ and because the project is just at the beginning, we have many assumptions that 
 <br>
 There will be two modes of operation that are taken into account, a case in which the memory is linear, one-dimensional,
 respectively a case in which the memory is two-dimensional.
-<br>
+<br><br>
 The operating system does not have a structure of directories or files, it only has to store files.
 In this sense, each file is identified by a descriptor - file-descriptor, unique ID (a natural number between 1
 and 255); thus, our system can store a maximum of 255 different files.
