@@ -7,7 +7,7 @@ coordinating the activities of a computer system, with a role in mediating acces
 to the machine's resources.
 Your task is to implement a management component of the storage device (hard disk or SSD), 
 and because the project is just at the beginning, we have many assumptions that simplify the development of this product.
-<br>
+<br><br>
 There will be two modes of operation that are taken into account, a case in which the memory is linear, one-dimensional,
 respectively a case in which the memory is two-dimensional.
 <br><br>
